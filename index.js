@@ -3,7 +3,7 @@ const SerialPort = require('serialport');
 const Readline = SerialPort.parsers.Readline;
 
 const port = new SerialPort('/dev/tty-usbserial1', {
-  baudRate: 57600,
+  baudRate: 9600,
 });
 
 port.on('error', console.error)
