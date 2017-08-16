@@ -1,5 +1,10 @@
+'use strict';
 
-module.exports.handleData = function (data) {
+function formatActorMessage() {
+
+}
+
+module.exports.parseSensorMessage = function (data) {
   // TODO extends the function
   console.log(data);
 }
