@@ -99,7 +99,9 @@ try {
     if (process.env.AUTO === false) {
       // Ignore
     } else {
+      if (heatData > 0) {
 
+      }
     }
   });
 
@@ -109,7 +111,11 @@ try {
     if (process.env.AUTO === false) {
       // Ignore
     } else {
-
+      if (lightData < 100) {
+        writeArduinoMessage(LIGHT_ON);
+      } else {
+        writeArduinoMessage(LIGHT_OFF);
+      }
     }
   });
 
