@@ -18,8 +18,14 @@ module.exports = {
     });
   },
 
-  emitMessage: (event, message) => {
-    io.emit(event, message)
+  emit: (event, message) => {
+    try {
+      io.emit(event, message);
+      console.log('Successfully sent message to socket');
+    } catch (e) {
+      console.log('Cannot emit message to socket');
+      console.error(e)
+    }
   }
 
 }

@@ -4,14 +4,12 @@ const SerialPort = require('serialport');
 const Readline = SerialPort.parsers.Readline;
 const parser = new Readline({ delimiter: '\r\n' });
 const customEmitter = require('./CustomEmitter');
-const { inquire } = require('inquirer');
 const socketServer = require('./server');
 
 const {
   FAN_ON,
   FAN_OFF,
   AUTO,
-  START_INQUIRING,
   NEW_HEAT_DATA,
   NEW_LIGHT_DATA,
   NEW_FAN_STATE,
@@ -60,10 +58,12 @@ function startArduinoConnection() {
     // Handle the sensor data
     parser.on('data', (data) => {
       try {
-        const { l: lightData, c: tempData, t: toggle } = JSON.parse(data);
-        console.log(lightData, tempData, toggle);
+        const parsedData = JSON.parse(data);
+        console.log('Emitting new sensor data', JSON.stringify(parsedData))
+        customEmitter.emit(NEW_HEAT_DATA, parsedData.c)
+        customEmitter.emit(NEW_LIGHT_DATA, parsedData.l)
       } catch (e) {
-        console.log('Malformed data format, ignoring');
+        console.log('Malformed data format, ignoring. Error: ', e.message);
       }
     });
 
@@ -71,9 +71,6 @@ function startArduinoConnection() {
     parser.on('error', error => {
       throw error;
     });
-
-    // Emit the inquiring event
-    customEmitter.emit(START_INQUIRING)
   });
 }
 
@@ -94,10 +91,6 @@ try {
   customEmitter.on(AUTO, () => {
     console.log('Going auto mode ......');
     process.env.AUTO = true;
-  });
-
-  customEmitter.on(START_INQUIRING, () => {
-    inquire();
   });
 
   customEmitter.on(NEW_HEAT_DATA, heatData => {
