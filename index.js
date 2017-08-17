@@ -13,12 +13,15 @@ const {
   NEW_HEAT_DATA,
   NEW_LIGHT_DATA,
   NEW_FAN_STATE,
+  WINDOW_OPEN,
+  WINDOW_CLOSED,
+  LIGHT_ON,
+  LIGHT_OFF,
 } = require('./constant');
 
 // Arduino port instance and settings
 const BAUD_RATE = 9600;
 const PORT_NAME = '/dev/cu.usbmodem1411';
-process.env.AUTO = false;
 
 const arduinoPort = new SerialPort(PORT_NAME, {
   baudRate: BAUD_RATE,
@@ -27,14 +30,15 @@ const arduinoPort = new SerialPort(PORT_NAME, {
 
 function writeArduinoMessage(message) {
   return new Promise((resolve, reject) => {
-    arduinoPort.write(message, function(err) {
+    arduinoPort.write(Buffer.from(message), function(err) {
       if (err) {
-        reject(err)
+        reject(err);
       } else {
-        resolve('Successfully write Arduino message', message)
+        resolve('Successfully write Arduino message', message);
       }
     });
   })
+  .catch(err => console.error(err));
 }
 
 function startArduinoConnection() {
@@ -90,39 +94,39 @@ try {
 
   customEmitter.on(AUTO, () => {
     console.log('Going auto mode ......');
-    process.env.AUTO = true;
   });
 
   customEmitter.on(NEW_HEAT_DATA, heatData => {
     // Emit for socket regardless of control mode
-    socketServer.emit(NEW_HEAT_DATA, heatData)
-    if (process.env.AUTO === false) {
-      // Ignore
+    socketServer.emit(NEW_HEAT_DATA, heatData);
+    if (heatData >= 28) {
+      console.log('Opening window and fan');
+      writeArduinoMessage(WINDOW_OPEN);
+      writeArduinoMessage(FAN_ON);
     } else {
-      if (heatData > 0) {
-
-      }
+      console.log('Closing window and fan')
+      writeArduinoMessage(WINDOW_CLOSED);
+      writeArduinoMessage(FAN_OFF);
     }
   });
 
   customEmitter.on(NEW_LIGHT_DATA, lightData => {
     // Emit for socket regardless of control mode
     socketServer.emit(NEW_LIGHT_DATA, lightData);
-    if (process.env.AUTO === false) {
-      // Ignore
+    if (lightData < 100) {
+      console.log('Turning on light');
+      writeArduinoMessage(LIGHT_ON);
     } else {
-      if (lightData < 100) {
-        writeArduinoMessage(LIGHT_ON);
-      } else {
-        writeArduinoMessage(LIGHT_OFF);
-      }
+      console.log('Turning off light');
+      writeArduinoMessage(LIGHT_OFF);
     }
   });
 
   customEmitter.on(NEW_FAN_STATE, fanData => {
     // Emit for socket regardless of control mode
     socketServer.emit(NEW_FAN_STATE, fanData);
-  })
+  });
+
 
   startArduinoConnection();
 

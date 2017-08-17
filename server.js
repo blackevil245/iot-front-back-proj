@@ -18,7 +18,7 @@ module.exports = {
     });
 
     app.get('/Team_Fan.css', function(req, res){
-    res.sendFile(__dirname + '/' +  'Team_Fan.css');
+      res.sendFile(__dirname + '/' +  'Team_Fan.css');
     });
 
     server.listen(PORT, () => {
@@ -29,7 +29,7 @@ module.exports = {
   emit: (event, message) => {
     try {
       io.emit(event, message);
-      console.log('Successfully sent message to socket');
+      // console.log('Successfully sent message to socket');
     } catch (e) {
       console.log(`Cannot emit message ${message} to socket with event ${event}`);
       console.error(e)

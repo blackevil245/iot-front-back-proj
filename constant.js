@@ -1,10 +1,13 @@
 
 module.exports = {
-  FAN_OFF: 0, // 48 on arduino
-  FAN_ON: 1, // 49 on arduino
+  FAN_OFF: '0', // 48 on arduino
+  FAN_ON: '1', // 49 on arduino
 
-  LIGHT_OFF: 2, // 50 on arduino
-  LIGHT_ON: 3, // 51 on arduino
+  WINDOW_CLOSED: '2', // 50 on arduino
+  WINDOW_OPEN: '3', // 51 on arduino
+
+  LIGHT_OFF: '4', // 52 on arduino
+  LIGHT_ON: '5', // 53 on arduino
 
   AUTO: 98,
 
