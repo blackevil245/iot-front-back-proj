@@ -1,56 +1,134 @@
 'use strict';
 
-const parseSensorMessage = require('./actor').parseSensorMessage;
-const timers = require('timers')
 const SerialPort = require('serialport');
 const Readline = SerialPort.parsers.Readline;
+const parser = new Readline({ delimiter: '\r\n' });
+const customEmitter = require('./CustomEmitter');
+const { inquire } = require('inquirer');
+const socketServer = require('./server');
 
+const {
+  FAN_ON,
+  FAN_OFF,
+  AUTO,
+  START_INQUIRING,
+  NEW_HEAT_DATA,
+  NEW_LIGHT_DATA,
+  NEW_FAN_STATE,
+} = require('./constant');
+
+// Arduino port instance and settings
 const BAUD_RATE = 9600;
-const PORT_NAME = '/dev/cu.usbmodem1421';
-// const PORT_NAME = '/dev/cu.usbmodem1411';
+const PORT_NAME = '/dev/cu.usbmodem1411';
+process.env.AUTO = false;
 
-let arduinoPort;
-
-arduinoPort = new SerialPort(PORT_NAME, {
+const arduinoPort = new SerialPort(PORT_NAME, {
   baudRate: BAUD_RATE,
   autoOpen: false,
 });
 
-arduinoPort.open();
-
-arduinoPort.on('error', e => {
-  console.log('Received error: ', e);
-});
-arduinoPort.on('close', () => {
-  console.log('Closing connection.')
-});
-
-arduinoPort.on('open', () => {
-  console.log('Successfully established connection to Arduino port ' + PORTNAME + ' with ' + BAUD_RATE + ' baud rate.');
-  const arduino = new Readline({ delimiter: '\r\n' });
-
-  timers.setInterval(() => {
-    console.log('Writting message to arduino')
-    arduinoPort.write('hello', function(err) {
+function writeArduinoMessage(message) {
+  return new Promise((resolve, reject) => {
+    arduinoPort.write(message, function(err) {
       if (err) {
-        console.log('Error on write: ', err.message);
+        reject(err)
+      } else {
+        resolve('Successfully write Arduino message', message)
       }
-      console.log('message written');
     });
-  }, 2000)
+  })
+}
 
-  try {
-    arduinoPort.pipe(arduino);
+function startArduinoConnection() {
+  console.log(`Trying to connect to Arduino through serial port ${PORT_NAME} with baud rate ${BAUD_RATE}`)
+  arduinoPort.open();
 
-    // Handle the sensor data on a separated file
-    arduino.on('data', parseSensorMessage);
+  arduinoPort.on('error', e => {
+    console.log('Received error: ', e);
+  });
 
-    arduino.on('error', error => {
-      console.log(error);
+  arduinoPort.on('close', () => {
+    console.log('Closing connection.')
+  });
+
+  arduinoPort.on('open', () => {
+    console.log('Successfully established connection to Arduino port ' + PORT_NAME + ' with ' + BAUD_RATE + ' baud rate.');
+
+    // Handle the data sent from the arduino
+    arduinoPort.pipe(parser);
+
+    // Handle the sensor data
+    parser.on('data', (data) => {
+      try {
+        const { l: lightData, c: tempData, t: toggle } = JSON.parse(data);
+        console.log(lightData, tempData, toggle);
+      } catch (e) {
+        console.log('Malformed data format, ignoring');
+      }
+    });
+
+    // Handle the sensor error
+    parser.on('error', error => {
       throw error;
     });
-  } catch (error) {
-    console.error(error.message);
-    console.error(error.stack);
-  }
-});
+
+    // Emit the inquiring event
+    customEmitter.emit(START_INQUIRING)
+  });
+}
+
+try {
+  // Start the socket server
+  socketServer.initServer();
+
+  customEmitter.on(FAN_ON, () => {
+    console.log('Turning the fan on.');
+    writeArduinoMessage(FAN_ON);
+  });
+
+  customEmitter.on(FAN_OFF, () => {
+    console.log('Turning the fan off.');
+    writeArduinoMessage(FAN_OFF);
+  });
+
+  customEmitter.on(AUTO, () => {
+    console.log('Going auto mode ......');
+    process.env.AUTO = true;
+  });
+
+  customEmitter.on(START_INQUIRING, () => {
+    inquire();
+  });
+
+  customEmitter.on(NEW_HEAT_DATA, heatData => {
+    // Emit for socket regardless of control mode
+    socketServer.emit(NEW_HEAT_DATA, heatData)
+    if (process.env.AUTO === false) {
+      // Ignore
+    } else {
+
+    }
+  });
+
+  customEmitter.on(NEW_LIGHT_DATA, lightData => {
+    // Emit for socket regardless of control mode
+    socketServer.emit(NEW_LIGHT_DATA, lightData);
+    if (process.env.AUTO === false) {
+      // Ignore
+    } else {
+
+    }
+  });
+
+  customEmitter.on(NEW_FAN_STATE, fanData => {
+    // Emit for socket regardless of control mode
+    socketServer.emit(NEW_FAN_STATE, fanData);
+  })
+
+  startArduinoConnection();
+
+} catch (error) {
+  console.error(error.message);
+  console.error(error.stack);
+  process.exit(1)
+}

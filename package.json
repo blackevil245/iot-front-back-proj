@@ -8,7 +8,11 @@
   },
   "author": "",
   "license": "MIT",
-  "devDependencies": {
-    "serialport": "^5.0.0"
+  "dependencies": {
+    "express": "^4.15.4",
+    "inquirer": "^3.2.1",
+    "serialport": "^5.0.0",
+    "socket-io": "^1.0.0",
+    "socket.io": "^2.0.3"
   }
 }
