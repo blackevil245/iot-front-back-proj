@@ -17,6 +17,7 @@ const {
   WINDOW_CLOSED,
   LIGHT_ON,
   LIGHT_OFF,
+  NEW_LED_DATA,
 } = require('./constant');
 
 // Arduino port instance and settings
@@ -66,6 +67,7 @@ function startArduinoConnection() {
         console.log('Emitting new sensor data', JSON.stringify(parsedData))
         customEmitter.emit(NEW_HEAT_DATA, parsedData.c)
         customEmitter.emit(NEW_LIGHT_DATA, parsedData.l)
+        customEmitter.emit(NEW_LED_DATA, parsedData.led)
       } catch (e) {
         console.log('Malformed data format, ignoring. Error: ', e.message);
       }
@@ -120,6 +122,11 @@ try {
       console.log('Turning off light');
       writeArduinoMessage(LIGHT_OFF);
     }
+  });
+
+  customEmitter.on(NEW_LED_DATA, ledData => {
+    // Emit for socket regardless of control mode
+    socketServer.emit(NEW_LED_DATA, ledData);
   });
 
   customEmitter.on(NEW_FAN_STATE, fanData => {

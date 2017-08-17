@@ -3,6 +3,7 @@ const app = require('express')();
 const server = require('http').createServer(app)
 const io = require('socket.io')(server);
 const customEmitter = require('./CustomEmitter');
+const { NEW_LIGHT_DATA, NEW_FAN_STATE } = require('./constant')
 
 const PORT = 8000;
 
@@ -24,12 +25,14 @@ module.exports = {
     server.listen(PORT, () => {
       console.info('[Server] Successfully established server, listening at port ', PORT);
     });
+
+    io.on(NEW_LIGHT_DATA, (message) => console.log(message));
+    io.on(NEW_FAN_STATE, (message) => console.log(message));
   },
 
   emit: (event, message) => {
     try {
       io.emit(event, message);
-      // console.log('Successfully sent message to socket');
     } catch (e) {
       console.log(`Cannot emit message ${message} to socket with event ${event}`);
       console.error(e)
