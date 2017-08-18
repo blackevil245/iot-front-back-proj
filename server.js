@@ -1,5 +1,6 @@
 
-const app = require('express')();
+const express = require('express');
+const app = express();
 const server = require('http').createServer(app)
 const io = require('socket.io')(server);
 const customEmitter = require('./CustomEmitter');
@@ -10,16 +11,15 @@ const PORT = 8000;
 module.exports = {
   initServer: () => {
     console.log('[Server] Setting up socket server')
+
+    app.use(express.static('assets'));
+
     app.get('/', function(req, res){
-      res.sendFile(__dirname + '/' + 'Team_Fan.html');
+      res.sendFile(__dirname + '/' + 'index.html');
     });
 
     app.get('/Socket_IO.js', function(req, res){
       res.sendFile(__dirname + '/' +  'Socket_IO.js');
-    });
-
-    app.get('/Team_Fan.css', function(req, res){
-      res.sendFile(__dirname + '/' +  'Team_Fan.css');
     });
 
     server.listen(PORT, () => {
